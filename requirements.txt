@@ -1,0 +1,27 @@
+# Core LLM & RAG (Let pip resolve compatible versions)
+langchain
+langchain-openai
+langchain-community
+
+# Vector Database
+chromadb
+
+# PDF Processing
+PyPDF2
+
+# Web Framework
+fastapi
+uvicorn
+streamlit
+
+# Utilities
+python-dotenv
+requests
+pydantic
+
+# LLM
+openai
+
+# Data Processing
+numpy
+pandas

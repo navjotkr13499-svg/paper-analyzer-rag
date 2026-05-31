@@ -1,3 +1,4 @@
+cat > src/rag_engine.py << 'EOF'
 """
 RAG (Retrieval-Augmented Generation) Engine
 Handles embeddings, retrieval, and generation
@@ -5,11 +6,13 @@ Handles embeddings, retrieval, and generation
 
 import os
 import shutil
-from typing import List, Tuple
+from typing import List
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain.chains import RetrievalQA  # ← CHANGED (removed "_classic")
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains import create_retrieval_chain
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from config.config import OPENAI_API_KEY, VECTOR_DB_PATH, LLM_TEMPERATURE, LLM_MAX_TOKENS
 
@@ -22,7 +25,8 @@ class RAGEngine:
         if not OPENAI_API_KEY:
             raise ValueError("❌ OPENAI_API_KEY not configured!")
         
-        self.embeddings = OpenAIEmbeddings(api_key=OPENAI_API_KEY)  # ← CHANGED
+        self.api_key = OPENAI_API_KEY
+        self.embeddings = OpenAIEmbeddings(api_key=self.api_key)
         self.vector_store = None
         self.qa_chain = None
         self._initialize_vector_store()
@@ -76,19 +80,30 @@ class RAGEngine:
             search_kwargs={"k": 4}  # Retrieve top 4 similar chunks
         )
         
+        # Create LLM
         llm = ChatOpenAI(
             temperature=LLM_TEMPERATURE,
             max_tokens=LLM_MAX_TOKENS,
-            api_key=OPENAI_API_KEY  # ← CHANGED
+            api_key=self.api_key
         )
         
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=retriever,
-            return_source_documents=True,
-            verbose=True
+        # System prompt
+        system_prompt = (
+            "You are a helpful assistant for answering questions about research papers. "
+            "Use the provided context to answer the user's question. "
+            "If you don't know the answer, say you don't know. "
+            "Keep your answer concise and accurate.\n\n"
+            "Context:\n{context}"
         )
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{input}")
+        ])
+        
+        # Create chain
+        question_answer_chain = create_stuff_documents_chain(llm, prompt)
+        self.qa_chain = create_retrieval_chain(retriever, question_answer_chain)
     
     def query(self, question: str):
         """
@@ -98,14 +113,17 @@ class RAGEngine:
             question: User question
             
         Returns:
-            Dictionary with result and source_documents
+            Dictionary with answer and source documents
         """
         if self.qa_chain is None:
             self.create_qa_chain()
         
-        result = self.qa_chain.invoke({"query": question})
+        result = self.qa_chain.invoke({"input": question})
         
-        return result
+        return {
+            "result": result.get("answer", "No answer found"),
+            "source_documents": result.get("context", [])
+        }
     
     def clear_vector_store(self):
         """Clear the vector store"""
@@ -114,3 +132,4 @@ class RAGEngine:
         self.vector_store = None
         self.qa_chain = None
         print("✓ Vector store cleared")
+EOF

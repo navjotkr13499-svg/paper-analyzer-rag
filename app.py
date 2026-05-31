@@ -19,7 +19,11 @@ st.write("Upload research papers and ask questions powered by AI!")
 def load_rag():
     return RAGEngine()
 
-rag = load_rag()
+try:
+    rag = load_rag()
+except ValueError as e:
+    st.error(f"❌ Configuration Error: {str(e)}")
+    st.stop()
 
 # Sidebar for file upload
 st.sidebar.header("📤 Upload Documents")
@@ -71,10 +75,12 @@ if question:
             
             # Display sources
             st.subheader("📄 Sources")
-            if result.get("source_documents"):
-                for i, doc in enumerate(result["source_documents"], 1):
+            sources = result.get("source_documents", [])
+            if sources:
+                for i, doc in enumerate(sources, 1):
                     with st.expander(f"Source {i}"):
-                        st.write(doc.page_content if hasattr(doc, 'page_content') else str(doc))
+                        content = doc.page_content if hasattr(doc, 'page_content') else str(doc)
+                        st.write(content[:500] + "...")
             else:
                 st.info("No sources found")
         except Exception as e:

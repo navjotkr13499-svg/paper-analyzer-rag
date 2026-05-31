@@ -1,23 +1,20 @@
+"""Configuration settings"""
 import os
-from dotenv import load_dotenv
+import streamlit as st
 
-load_dotenv()
+# Get API key from Streamlit secrets (production) or env var (local)
+try:
+    OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+except:
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+# Vector database path
+VECTOR_DB_PATH = "./chroma_db"
 
-# Vector Database
-VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH", "./data/vectors")
+# LLM parameters
+LLM_TEMPERATURE = 0.7
+LLM_MAX_TOKENS = 1000
 
-# Server Configuration
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", 8000))
-
-# Chunk Configuration
+# PDF processing
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
-
-# LLM Configuration
-LLM_TEMPERATURE = 0.7
-LLM_MAX_TOKENS = 2048

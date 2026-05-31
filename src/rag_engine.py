@@ -9,7 +9,7 @@ from typing import List, Tuple
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
-from langchain_classic.chains import RetrievalQA
+from langchain.chains import RetrievalQA  # ← CHANGED (removed "_classic")
 from langchain_core.documents import Document
 from config.config import OPENAI_API_KEY, VECTOR_DB_PATH, LLM_TEMPERATURE, LLM_MAX_TOKENS
 
@@ -19,7 +19,10 @@ class RAGEngine:
     
     def __init__(self):
         """Initialize RAG components"""
-        self.embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+        if not OPENAI_API_KEY:
+            raise ValueError("❌ OPENAI_API_KEY not configured!")
+        
+        self.embeddings = OpenAIEmbeddings(api_key=OPENAI_API_KEY)  # ← CHANGED
         self.vector_store = None
         self.qa_chain = None
         self._initialize_vector_store()
@@ -61,8 +64,6 @@ class RAGEngine:
             persist_directory=VECTOR_DB_PATH
         )
         
-        # Persist to disk
-        #self.vector_store.persist()
         print(f"✓ Added {len(chunks)} chunks to vector store")
     
     def create_qa_chain(self):
@@ -78,7 +79,7 @@ class RAGEngine:
         llm = ChatOpenAI(
             temperature=LLM_TEMPERATURE,
             max_tokens=LLM_MAX_TOKENS,
-            openai_api_key=OPENAI_API_KEY
+            api_key=OPENAI_API_KEY  # ← CHANGED
         )
         
         self.qa_chain = RetrievalQA.from_chain_type(
@@ -89,7 +90,7 @@ class RAGEngine:
             verbose=True
         )
     
-    def query(self, question: str) -> Tuple[str, List[dict]]:
+    def query(self, question: str):
         """
         Query the RAG system
         
@@ -97,23 +98,14 @@ class RAGEngine:
             question: User question
             
         Returns:
-            Tuple of (answer, source_documents)
+            Dictionary with result and source_documents
         """
         if self.qa_chain is None:
             self.create_qa_chain()
         
         result = self.qa_chain.invoke({"query": question})
         
-        # Format source documents
-        sources = [
-            {
-                "content": doc.page_content[:200],
-                "metadata": doc.metadata
-            }
-            for doc in result.get("source_documents", [])
-        ]
-        
-        return result["result"], sources
+        return result
     
     def clear_vector_store(self):
         """Clear the vector store"""

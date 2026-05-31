@@ -62,7 +62,7 @@ class RAGEngine:
         )
         
         # Persist to disk
-        self.vector_store.persist()
+        #self.vector_store.persist()
         print(f"✓ Added {len(chunks)} chunks to vector store")
     
     def create_qa_chain(self):
@@ -102,7 +102,7 @@ class RAGEngine:
         if self.qa_chain is None:
             self.create_qa_chain()
         
-        result = self.qa_chain({"query": question})
+        result = self.qa_chain.invoke({"query": question})
         
         # Format source documents
         sources = [

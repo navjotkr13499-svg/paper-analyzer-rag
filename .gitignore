@@ -1,4 +1,5 @@
 # Environment
+.streamlit/secrets.toml
 .env
 config/config.py
 *.pyc

@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![LangChain](https://img.shields.io/badge/LangChain-Classic-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 # 📚 Research Paper Analyzer - RAG System
 
 An AI-powered system for analyzing research papers using Retrieval-Augmented Generation (RAG).
